@@ -1,7 +1,7 @@
  RTVSQLSRC:  CMD        PROMPT('Retrieve SQL Source')
              /* Command processing program is: RTVSQLSRC  */
              PARM       KWD(FILE) TYPE(QUAL) MIN(1) PROMPT('File name')
- QUAL:       QUAL       TYPE(*NAME) MIN(1) EXPR(*YES)
+ QUAL:       QUAL       TYPE(*GENERIC) MIN(1) EXPR(*YES) SPCVAL((*ALL))
              QUAL       TYPE(*NAME) DFT(*LIBL) SPCVAL((*CURLIB) (*LIBL)) +
                           MIN(0) EXPR(*YES) PROMPT('Library')
              PARM       KWD(SRCFILE) TYPE(SRCFILE) PROMPT('Source file +
