@@ -16,6 +16,7 @@
      D  FileLib                      20A
      D  SrcFileLib                   20A
      D  InSrcmbr                     10A
+     D  SrcFlr                      128A   VARYING
      D  bReplace                      1N   OPTIONS(*NOPASS)
      D  szNaming                      3A   OPTIONS(*NOPASS)
      D  nStandard                     5I 0 OPTIONS(*NOPASS)
@@ -27,6 +28,7 @@
      D  FileLib                      20A
      D  SrcFileLib                   20A
      D  InSrcmbr                     10A
+     D  SRcFlr                      128A   VARYING
      D  bReplace                      1N   OPTIONS(*NOPASS)
      D  szNaming                      3A   OPTIONS(*NOPASS)
      D  nStandard                     5I 0 OPTIONS(*NOPASS)
@@ -105,6 +107,7 @@
      D od              DS                  LikeDS(QUSL010003)
      D                                     Based(p_od)
 
+     D Command         S           1024A   VARYING
      D FileType        S                   Like(QUSEoA05)
      D I               S             10I 0
      D InReplace       S              1N   Inz('1')
@@ -116,7 +119,7 @@
      D inHeader        S              1N   Inz('1')
      D ListPtr         S               *
      D SQLTempl        S                   Like(QSQR0100)
-     D SrcMbr          S             10A
+     D SrcMbr          S                   Like(InSrcMbr)
      D UserSpace       S             20A   Inz('RTVSQLSRC QTEMP')
 
      C                   eval      *INLR = *ON
@@ -145,6 +148,16 @@
      C                   endif
      C                   endif
      C                   endif
+     C                   endif
+
+      ** Force a dummy source file if choosing to write to IFS
+     C                   if        SrcFile = '*NONE'
+     C                   eval      SrcFile = 'RTVSQLSRC'
+     C                   eval      SrcLib = 'QTEMP'
+     C                   eval      InSrcMbr = '*FILE'
+     C                   eval      command = 'CRTSRCPF FILE(QTEMP/RTVSQLSRC) '
+     C                                     + 'RCDLEN(92)'
+     C                   callp     system(command)
      C                   endif
 
       ** Revrieve object list (generic name allowed)
@@ -232,14 +245,26 @@
       **        a qualified data structure instead.
      C                   eval      sqltempl = Qsqr0100
      C                   reset                   apiError
-     C                   CallP     qrtvsqlsrc(sqltempl : %Len(QSQR0100) :
+     C                   callP     qrtvsqlsrc(sqltempl : %Len(QSQR0100) :
      C                                 'SQLR0100' : apiError)
+
+     C                   eval      command =
+     C                             'CPYTOSTMF '
+     C                                   + 'FROMMBR(''/QSYS.LIB/QTEMP.LIB/'
+     C                                            + 'RTVSQLSRC.FILE/'
+     C                                            + %TRIMR(SrcMbr) + '.MBR'') '
+     C                                   + 'TOSTMF(''' + %TRIMR(SrcFlr) + '/'
+     C                                           + %TRIMR(lower(od.QUSOBJNU))
+     C                                           + '.sql'') '
+     C                                   + 'STMFOPT(*REPLACE) STMFCCSID(1252) '
+     C                                   + 'ENDLINFMT(*LF)'
+     C                   callp     system(command)
 
      C                   endfor
 
      C                   return
 
-     P SafeAddMbr      B                   Export
+     P SafeAddMbr      B
      D SafeAddMbr      PI
      D  SrcFileLib                   20A   Value
      D  SrcMbr                       10A   Value
@@ -295,9 +320,30 @@
      C                             errMsgID = 'CPF32DE' or
      C                             errMsgID = 'CPF3C27' or
      C                             errMsgID = 'CPF3C26'
-     C                   callp     system('ADDPFM FILE(' + %TrimR(srcLib) + '/'
-     C                               + srcfile + ') MBR(' + srcmbr + ')')
+     C                   eval      command = 'ADDPFM FILE(' + %TrimR(srcLib)
+     C                             + '/' + srcfile + ') MBR(' + srcmbr + ')'
+     C                   callp     system(command)
      C                   endif
      C                   endif
      C                   return
      P SafeAddMbr      E
+
+
+
+     P Lower           B
+     D Lower           PI            10A
+     D  Upper                        10A
+
+     D from            S             26A   INZ('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+     D to              S             26A   INZ('abcdefghijklmnopqrstuvwxyz')
+
+     D lower           S             10A
+
+      /FREE
+
+       lower = %XLATE(from:to:upper);
+
+       return lower;
+
+      /END-FREE
+     P Lower           E

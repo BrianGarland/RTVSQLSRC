@@ -1,0 +1,106 @@
+             PGM        PARM(&QFILE &QSRCFILE &SRCMBR &SRCFLRX &REPLACE +
+                          &NAMING &SQLLVL &GENDROP &COMMENT &MSGLVL +
+                          &SEVLVL)
+
+             DCL        VAR(&QFILE)    TYPE(*CHAR) LEN(20)
+             DCL        VAR(&QSRCFILE) TYPE(*CHAR) LEN(20)
+             DCL        VAR(&SRCMBR)   TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SRCFLRX)  TYPE(*CHAR) LEN(128)
+             DCL        VAR(&REPLACE)  TYPE(*LGL) LEN(1)
+             DCL        VAR(&NAMING)   TYPE(*CHAR) LEN(3)
+             DCL        VAR(&SQLLVL)   TYPE(*INT) LEN(2)
+             DCL        VAR(&GENDROP)  TYPE(*LGL) LEN(1)
+             DCL        VAR(&COMMENT)  TYPE(*LGL) LEN(1)
+             DCL        VAR(&MSGLVL)   TYPE(*INT) LEN(2)
+             DCL        VAR(&SEVLVL)   TYPE(*INT) LEN(2)
+
+
+             DCL        VAR(&ANYERR)    TYPE(*LGL) LEN(1) VALUE('0')
+             DCL        VAR(&INT)       TYPE(*INT) LEN(2)
+             DCL        VAR(&ISGENERIC) TYPE(*LGL) LEN(1) VALUE('0')
+             DCL        VAR(&OBJFILE)   TYPE(*CHAR) LEN(10)
+             DCL        VAR(&OBJLIB)    TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SRCFILE)   TYPE(*CHAR) LEN(10)
+             DCL        VAR(&SRCFLR)    TYPE(*CHAR) LEN(128)
+             DCL        VAR(&SRCLIB)    TYPE(*CHAR) LEN(10)
+
+
+
+             CHGVAR     VAR(&OBJFILE) VALUE(%SST(&QFILE 1 10))
+             CHGVAR     VAR(&OBJLIB) VALUE(%SST(&QFILE 11 10))
+
+             CHGVAR     VAR(&SRCFILE) VALUE(%SST(&QSRCFILE 1 10))
+             CHGVAR     VAR(&SRCLIB) VALUE(%SST(&QSRCFILE 11 10))
+
+             CHGVAR     VAR(&INT) VALUE(%BINARY(&SRCFLRX 1 2))
+             CHGVAR     VAR(&SRCFLR) VALUE(%SST(&SRCFLRX 3 &INT))
+
+
+             DOFOR      VAR(&INT) FROM(1) TO(10)
+                 IF         COND(%SST(&OBJFILE &INT 1) *EQ '*') +
+                              THEN(CHGVAR VAR(&ISGENERIC) VALUE('1'))
+             ENDDO
+
+
+             RTVOBJD    OBJ(QSYS/&OBJLIB) OBJTYPE(*LIB)
+             MONMSG     MSGID(CPF9800) EXEC(DO)
+                 SNDPGMMSG  MSGID(CPD0006) MSGF(QCPFMSG) MSGDTA('0000' +
+                              *CAT 'The library ' *CAT &OBJLIB *TCAT ' +
+                              does not exist.') MSGTYPE(*DIAG)
+                 CHGVAR     VAR(&ANYERR) VALUE('1')
+             ENDDO
+
+             IF         COND(&ISGENERIC *EQ '0') THEN(DO)
+                 RTVOBJD    OBJ(&OBJLIB/&OBJFILE) OBJTYPE(*FILE)
+                 MONMSG     MSGID(CPF9800) EXEC(DO)
+                     SNDPGMMSG  MSGID(CPD0006) MSGF(QCPFMSG) MSGDTA('0000' +
+                                  *CAT 'The file ' *CAT &OBJLIB *TCAT '/' +
+                                  *TCAT &OBJFILE *TCAT ' does not exist.') +
+                                  MSGTYPE(*DIAG)
+                     CHGVAR     VAR(&ANYERR) VALUE('1')
+                 ENDDO
+             ENDDO
+
+             IF         COND(&SRCMBR *NE '*FILE' *AND &ISGENERIC *EQ '1') +
+                          THEN(DO)
+                 SNDPGMMSG  MSGID(CPD0006) MSGF(QCPFMSG) MSGDTA('0000' +
+                              *CAT 'Source member must be *FILE when using +
+                              a generic name.') MSGTYPE(*DIAG)
+                 CHGVAR     VAR(&ANYERR) VALUE('1')
+             ENDDO
+
+             IF         COND(&SRCFILE *NE '*NONE') THEN(DO)
+                 RTVOBJD    OBJ(QSYS/&SRCLIB) OBJTYPE(*LIB)
+                 MONMSG     MSGID(CPF9800) EXEC(DO)
+                     SNDPGMMSG  MSGID(CPD0006) MSGF(QCPFMSG) MSGDTA('0000' +
+                                  *CAT 'The library ' *CAT &SRCLIB *TCAT ' +
+                                  does not exist.') MSGTYPE(*DIAG)
+                     CHGVAR     VAR(&ANYERR) VALUE('1')
+                 ENDDO
+
+                 RTVOBJD    OBJ(&SRCLIB/&SRCFILE) OBJTYPE(*FILE)
+                 MONMSG     MSGID(CPF9800) EXEC(DO)
+                     SNDPGMMSG  MSGID(CPD0006) MSGF(QCPFMSG) MSGDTA('0000' +
+                                  *CAT 'The file ' *CAT &SRCLIB *TCAT '/' +
+                                  *TCAT &SRCFILE *TCAT ' does not exist.') +
+                                  MSGTYPE(*DIAG)
+                     CHGVAR     VAR(&ANYERR) VALUE('1')
+                 ENDDO
+             ENDDO
+
+             IF         COND(&SRCFILE *NE '*NONE' *AND &SRCFLR *NE ' ') +
+                          THEN(DO)
+                 SNDPGMMSG  MSGID(CPD0006) MSGF(QCPFMSG) MSGDTA('0000' +
+                              *CAT 'You cannot specify both a source +
+                              member and a source folder.') MSGTYPE(*DIAG)
+                 CHGVAR     VAR(&ANYERR) VALUE('1')
+             ENDDO
+
+
+
+             IF         COND(&ANYERR) THEN(DO)
+                 SNDPGMMSG  MSGID(CPF0002) MSGF(QCPFMSG) MSGTYPE(*ESCAPE)
+             ENDDO
+
+
+             ENDPGM

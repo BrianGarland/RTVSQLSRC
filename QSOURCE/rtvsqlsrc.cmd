@@ -6,11 +6,14 @@
                           MIN(0) EXPR(*YES) PROMPT('Library')
              PARM       KWD(SRCFILE) TYPE(SRCFILE) PROMPT('Source file +
                           name')
- SRCFILE:    QUAL       TYPE(*NAME) DFT(QSQLSRC) EXPR(*YES)
+ SRCFILE:    QUAL       TYPE(*NAME) DFT(QSQLSRC) SPCVAL((*NONE)) EXPR(*YES)
              QUAL       TYPE(*NAME) DFT(*LIBL) SPCVAL((*CURLIB) (*LIBL)) +
                           MIN(0) EXPR(*YES) PROMPT('Library')
-             PARM       KWD(SRCMBR) TYPE(*NAME) DFT(*FILE) SPCVAL((*FILE)) +
-                          EXPR(*YES) PROMPT('Source member')
+             PARM       KWD(SRCMBR) TYPE(*NAME) LEN(10) DFT(*FILE) +
+                          SPCVAL((*FILE)) EXPR(*YES) PROMPT('Source +
+                          member')
+             PARM       KWD(SRCFLR) TYPE(*PNAME) LEN(128) MIN(0) VARY(*YES +
+                          *INT2) CASE(*MIXED) PROMPT('Source folder')
              PARM       KWD(REPLACE) TYPE(*LGL) DFT(*YES) SPCVAL((*YES +
                           '1') (*NO '0') (*ON '1') (*OFF '0') (*REPLACE +
                           '1') (*NOREPLACE '0')) EXPR(*YES) +
